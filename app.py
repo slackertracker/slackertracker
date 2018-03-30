@@ -32,6 +32,7 @@ class User(Base):
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/sqlite.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 with app.app_context():
     db.init_app(app)
