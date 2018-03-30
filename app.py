@@ -5,6 +5,10 @@ from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
+# Stuff for routing
+from flask import request
+from flask import Response
+
 ## MODELS
 
 db = SQLAlchemy()
@@ -46,6 +50,25 @@ def show_users():
     user = User.query.all()[0]
     return jsonify(user.serialize())
 
-@app.route("/")
-def hello():
-    return "Hello World!"
+@app.route('/', methods=['GET', 'POST'])
+def receive_data():
+    if request.method == 'POST':
+        data = request.get_json()
+
+        if data["token"]:
+            ret = '{"challenge":' + data["challenge"] + '}'
+
+            response = Response(
+                response = ret,
+                status = 200,
+                mimetype = 'application/json'
+            )
+
+            return response
+
+        else:
+            # Do some other stuff with the data received from the Event API
+            return('Got some data!!')
+
+    elif request.method == 'GET':
+        return('Hello World!')
