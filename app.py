@@ -4,6 +4,7 @@ from flask import Flask
 from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from .helpers import get_challenge_response
 
 # Stuff for routing
 from flask import request
@@ -56,20 +57,32 @@ def receive_data():
     if request.method == 'POST':
         data = request.get_json()
 
-        if data["token"]:
-            ret = '{"challenge":' + data["challenge"] + '}'
-
-            response = Response(
-                response = ret,
-                status = 200,
-                mimetype = 'application/json'
-            )
-
-            return response
+        if data['type'] == 'url_verification':
+            return(get_challenge_response(data))
 
         else:
             # Do some other stuff with the data received from the Event API
-            return('Got some data!!')
+            return(data)
 
     elif request.method == 'GET':
         return('Hello World!')
+
+@app.route('/api/slack/commands', methods=['POST'])
+def slash_command():
+    data = request.get_json()
+
+    if data['type'] == 'url_verification':
+        return(get_challenge_response(data)) 
+
+    else:
+        return(data)
+
+@app.route('/api/slack/events', methods=['POST'])
+def incoming_event():
+    data = request.get_json()
+
+    if data['type'] == 'url_verification':
+        return(get_challenge_response(data))
+
+    else:
+        return data
