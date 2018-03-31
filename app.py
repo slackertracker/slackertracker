@@ -64,7 +64,7 @@ class Reaction(Base):
 class Channel(Base):
     slack_id = db.Column(db.String(32), nullable=False)
     team_id = db.Column(db.String(32), nullable=False)
-    name = db.Column(db.String(32), nullable=False)
+    name = db.Column(db.String(32))
     is_private = db.Column(db.Boolean)
     reactions = db.relationship('Reaction', primaryjoin="Channel.id==Reaction.channel_id", backref='channel', lazy=True)
 
