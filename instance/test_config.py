@@ -5,5 +5,5 @@ SLACK_VERIFICATION_TOKEN = ""
 SLACK_LEGACY_TOKEN = ""
 
 # SQLAlchemy
-SQLALCHEMY_DATABASE_URI = "sqlite:///instance/sqlite.db"
+SQLALCHEMY_DATABASE_URI = "sqlite:///instance/test_sqlite.db"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
