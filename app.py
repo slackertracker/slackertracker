@@ -27,8 +27,8 @@ class User(Base):
     slack_id = db.Column(db.String(32), unique=True, nullable=False)
     display_name = db.Column(db.String(128), nullable=False)
 
-    reactions_sent = db.relationship('Reaction', primaryjoin="User.id==Reaction.user_id_rs", backref='sender', lazy=True)
-    reactions_received = db.relationship('Reaction', primaryjoin="User.id==Reaction.user_id_rr", backref='receiver', lazy=True)
+    reactions_sent = db.relationship('Reaction', primaryjoin="User.id==Reaction.sender_id", backref='sender', lazy=True)
+    reactions_received = db.relationship('Reaction', primaryjoin="User.id==Reaction.receiver_id", backref='receiver', lazy=True)
 
     def serialize(self):
         return({
@@ -47,8 +47,8 @@ class Reaction(Base):
     
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False)
 
-    user_id_rs = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user_id_rr = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
     def serialize(self):
         return({
@@ -56,8 +56,8 @@ class Reaction(Base):
             'team_id': self.team_id,
             'date_created': self.date_created,
             'name': self.name,
-            'sender_id': self.user_id_rs,
-            'receiver_id': self.user_id_rr,
+            'sender_id': self.sender_id,
+            'receiver_id': self.receiver_id,
             'message': self.message
         })
 
@@ -66,7 +66,7 @@ class Channel(Base):
     team_id = db.Column(db.String(32), nullable=False)
     name = db.Column(db.String(32), nullable=False)
     is_private = db.Column(db.Boolean)
-    reaction_id = db.relationship('Reaction', primaryjoin="Channel.id==Reaction.channel_id", backref='channel', lazy=True)
+    reactions = db.relationship('Reaction', primaryjoin="Channel.id==Reaction.channel_id", backref='channel', lazy=True)
 
     def serialize(self):
         return({
@@ -74,7 +74,8 @@ class Channel(Base):
             'slack_id': self.slack_id,
             'team_id': self.team_id,
             'name': self.name,
-            'is_private': self.is_private
+            'is_private': self.is_private,
+            'reactions': self.reactions
         })
 
 app = Flask(__name__)
