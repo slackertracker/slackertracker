@@ -8,7 +8,7 @@ sudo: false
 install:
   - pip install -r requirements.txt
   - mv instance/config.py.template instance/config.py
-  - flask db upgrade || true
+  - flask db upgrade
 
 script:
   - flask test
