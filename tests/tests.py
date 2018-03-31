@@ -2,8 +2,7 @@ import unittest
 
 from slackertracker.app import create_app, db
 from slackertracker.app import User, Channel, Reaction
-
-test_config = 'instance/test_config.py'
+from slackertracker.tests.suite import test_config
 
 class TestHello(unittest.TestCase):
     def setUp(self):
@@ -48,3 +47,4 @@ class TestCreateUser(unittest.TestCase):
     def tearDown(self):
         db.session.remove()
         db.drop_all()
+        
