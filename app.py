@@ -59,6 +59,7 @@ class Reaction(Base):
             'name': self.name,
             'sender_id': self.sender_id,
             'receiver_id': self.receiver_id,
+            'channel_id': self.channel_id
         })
 
 class Channel(Base):
@@ -75,7 +76,7 @@ class Channel(Base):
             'team_id': self.team_id,
             'name': self.name,
             'is_private': self.is_private,
-            'reactions': self.reactions
+            'reactions': self.reactions,
         })
 
 app = Flask(__name__)
