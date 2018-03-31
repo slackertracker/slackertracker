@@ -6,14 +6,16 @@ from flask import render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
-from .helpers import get_challenge_response
+# helpers
+from slackertracker.helpers import get_challenge_response
+from slackertracker.helpers import get_user_by_slack_id
+from slackertracker.helpers import get_channel_by_slack_id
 
 # Stuff for routing
 from flask import request
 from flask import Response
 
 ## MODELS
-
 db = SQLAlchemy()
 
 class Base(db.Model):
@@ -79,67 +81,117 @@ class Channel(Base):
             'reactions': self.reactions,
         })
 
-app = Flask(__name__)
-app.config.from_pyfile('instance/config.py')
+def create_app(config_file):
+    app = Flask(__name__)
+    app.config.from_pyfile(config_file)
 
-with app.app_context():
-    db.init_app(app)
+    with app.app_context():
+        db.init_app(app)
 
-migrations_directory = os.path.join('migrations')
-migrate = Migrate(app, db, directory=migrations_directory)
+    migrations_directory = os.path.join('migrations')
+    migrate = Migrate(app, db, directory=migrations_directory)
 
-## ROUTES
+    ## ROUTES
 
-@app.route('/', methods=['GET', 'POST'])
-def receive_data():
-    if request.method == 'POST':
+    @app.route('/', methods=['GET', 'POST'])
+    def receive_data():
+        if request.method == 'POST':
+            data = request.get_json()
+
+            if data['type'] == 'url_verification':
+                return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
+
+            else:
+                # Do some other stuff with the data received from the Event API
+                return(jsonify(data))
+
+        elif request.method == 'GET':
+            return("Hello!")
+
+    @app.route('/auth/request')
+    def auth_request():
+        return render_template('add_to_slack.html')
+
+    @app.route('/auth/granted')
+    def auth_granted():
+        return("Authorized.")
+
+    @app.route('/api/slack/commands', methods=['POST'])
+    def slash_command():
+        data = request.form.to_dict()
+
+        if data.get('type'):
+            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
+        else:
+            return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
+
+    @app.route('/api/slack/events', methods=['POST'])
+    def incoming_event():
         data = request.get_json()
 
-        if data['type'] == 'url_verification':
+        if data.get('type') == 'url_verification':
             return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
 
-        else:
-            # Do some other stuff with the data received from the Event API
-            return(jsonify(data))
+        elif data.get('type') == 'event_callback':
+            event = data.get('event')
+            item = event.get('item')
+            team_id = data.get('team_id')
 
-    elif request.method == 'GET':
-        return("Hello!")
+            sender_slack_id = event.get('user')
+            sender = User.query.filter_by(slack_id=sender_slack_id).first()
+            if sender is None:
+                user_data = get_user_by_slack_id(sender_slack_id)
 
-@app.route('/auth/request')
-def auth_request():
-    return render_template('add_to_slack.html')
+                sender = User(
+                    display_name = user_data.get('display_name'),
+                    slack_id = sender_slack_id,
+                    team_id = team_id
+                )
 
-@app.route('/auth/granted')
-def auth_granted():
-    return("Authorized.")
+                db.session.add(sender)
+                db.session.commit()
+                sender = User.query.filter_by(slack_id=sender_slack_id).first()
 
-@app.route('/api/slack/commands', methods=['POST'])
-def slash_command():
-    data = request.form.to_dict()
+            receiver_slack_id = event.get('item_user')
+            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+            if receiver is None:
+                user_data = get_user_by_slack_id(receiver_slack_id)
+                receiver = User(
+                    slack_id = receiver_slack_id,
+                    display_name = user_data.get('display_name'),
+                    team_id = team_id
+                )
+                db.session.add(receiver)
+                db.session.commit()
+                receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+            
+            if item.get('type') == 'message':
+                channel_id = item.get('channel')
+                channel = Channel.query.filter_by(slack_id=channel_id).first()
 
-    if data.get('type'):
-        return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
-    else:
-        return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
+                if not channel:
+                    channel_data = get_channel_by_slack_id(channel_id)
+                    channel = Channel(
+                        slack_id = channel_id,
+                        team_id = team_id,
+                        name = channel_data.get('name'),
+                        is_private = channel_data.get('is_private')
+                    )
+                    db.session.add(channel)
+                    db.session.commit()
+                    channel = Channel.query.filter_by(slack_id=channel_id).first()
 
-@app.route('/api/slack/events', methods=['POST'])
-def incoming_event():
-    data = request.get_json()
+            reaction = Reaction(
+                name = event.get('reaction'),
+                team_id = team_id,
+                sender_id = sender.id,
+                receiver_id = receiver.id,
+                channel_id = channel.id
+            )
 
-    if data['type'] == 'url_verification':
-        return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
+            db.session.add(reaction)
+            db.session.commit()
 
-    elif data['type'] == 'reaction_added':
-        channel = ""
+            return(jsonify(reaction.serialize()))
 
-        if data['item']['type'] == 'message':
-            channel_id = data['item']['channel']
-
-        reaction = {
-            'sender_id': data['user'],
-            'receiver_id': data['item_user'],
-            'channel_id': channel_id,
-            'reaction': data['reaction']
-        }
-
-        return(jsonify(reaction))
+    return(app)

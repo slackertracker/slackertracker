@@ -11,11 +11,11 @@ RUN apt-get update
 RUN apt-get install -y python3 python3-pip
 RUN pip3 install --upgrade pip
 
-run mkdir -p /app/instance
-add ./requirements.txt /app
-WORKDIR /app
+run mkdir -p /slackertracker/instance
+add ./requirements.txt /slackertracker
+WORKDIR /slackertracker
 RUN pip3 install -r requirements.txt
-ADD . /app
+ADD . /slackertracker
 
 ENV FLASK_APP manage.py
 ENV LC_ALL C.UTF-8
