@@ -27,12 +27,51 @@ class User(Base):
     slack_id = db.Column(db.String(32), unique=True, nullable=False)
     display_name = db.Column(db.String(128), nullable=False)
 
+    reactions_sent = db.relationship('Reaction', primaryjoin="User.id==Reaction.user_id_rs", backref='sender', lazy=True)
+    reactions_received = db.relationship('Reaction', primaryjoin="User.id==Reaction.user_id_rr", backref='receiver', lazy=True)
+
     def serialize(self):
         return({
             'id': self.id,
             'team_id': self.team_id,
             'slack_id': self.slack_id,
-            'display_name': self.display_name,
+            'display_name': self.display_name
+        })
+
+class Reaction(Base):
+    name = db.Column(db.String(32), nullable=False)
+    team_id = db.Column(db.String(32), nullable=False)
+    message = db.Column(db.Text)
+    
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False)
+
+    user_id_rs = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id_rr = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    def serialize(self):
+        return({
+            'id': self.id,
+            'date_created': self.date_created,
+            'name': self.name,
+            'sender_id': self.sender_id,
+            'receiver_id': self.receiver_id,
+            'message': self.message
+        })
+
+class Channel(Base):
+    slack_id = db.Column(db.String(32), nullable=False)
+    team_id = db.Column(db.String(32), nullable=False)
+    name = db.Column(db.String(32), nullable=False)
+    is_private = db.Column(db.Boolean)
+    reaction_id = db.relationship('Reaction', primaryjoin="Channel.id==Reaction.channel_id", backref='channel', lazy=True)
+
+    def serialize(self):
+        return({
+            'id': self.id,
+            'slack_id': self.slack_id,
+            'team_id': self.team_id,
+            'name': self.name,
+            'is_private': self.is_private,
         })
 
 app = Flask(__name__)
@@ -51,6 +90,10 @@ migrate = Migrate(app, db, directory=migrations_directory)
 def show_users():
     user = User.query.all()[0]
     return jsonify(user.serialize())
+
+@app.route("/")
+def hello():
+    return "Hello World!"
 
 @app.route('/', methods=['GET', 'POST'])
 def receive_data():
