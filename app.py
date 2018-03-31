@@ -184,9 +184,9 @@ def create_app(config_file):
             reaction = Reaction(
                 name = event.get('reaction'),
                 team_id = team_id,
-                sender_id = sender_id,
-                receiver_id = receiver_id,
-                channel_id = channel_id
+                sender_id = sender.id,
+                receiver_id = receiver.id,
+                channel_id = channel.id
             )
 
             db.session.add(reaction)
