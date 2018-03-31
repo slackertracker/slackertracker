@@ -1,9 +1,11 @@
 import os
 from flask import Flask
-
 from flask import jsonify
+from flask import render_template
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
 from .helpers import get_challenge_response
 
 # Stuff for routing
@@ -78,8 +80,7 @@ class Channel(Base):
         })
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/sqlite.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config.from_pyfile('instance/config.py')
 
 with app.app_context():
     db.init_app(app)
@@ -89,46 +90,56 @@ migrate = Migrate(app, db, directory=migrations_directory)
 
 ## ROUTES
 
-@app.route("/user")
-def show_users():
-    user = User.query.all()[0]
-    return jsonify(user.serialize())
-
-@app.route("/")
-def hello():
-    return "Hello World!"
-
 @app.route('/', methods=['GET', 'POST'])
 def receive_data():
     if request.method == 'POST':
         data = request.get_json()
 
         if data['type'] == 'url_verification':
-            return(get_challenge_response(data))
+            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
 
         else:
             # Do some other stuff with the data received from the Event API
-            return(data)
+            return(jsonify(data))
 
     elif request.method == 'GET':
-        return('Hello World!')
+        return("Hello!")
+
+@app.route('/auth/request')
+def auth_request():
+    return render_template('add_to_slack.html')
+
+@app.route('/auth/granted')
+def auth_granted():
+    return("Authorized.")
 
 @app.route('/api/slack/commands', methods=['POST'])
 def slash_command():
-    data = request.get_json()
+    data = request.form.to_dict()
 
-    if data['type'] == 'url_verification':
-        return(get_challenge_response(data)) 
-
+    if data.get('type'):
+        return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
     else:
-        return(data)
+        return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
 
 @app.route('/api/slack/events', methods=['POST'])
 def incoming_event():
     data = request.get_json()
 
     if data['type'] == 'url_verification':
-        return(get_challenge_response(data))
+        return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
 
-    else:
-        return data
+    elif data['type'] == 'reaction_added':
+        channel = ""
+
+        if data['item']['type'] == 'message':
+            channel_id = data['item']['channel']
+
+        reaction = {
+            'sender_id': data['user'],
+            'receiver_id': data['item_user'],
+            'channel_id': channel_id,
+            'reaction': data['reaction']
+        }
+
+        return(jsonify(reaction))
