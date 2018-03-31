@@ -1,7 +1,9 @@
 import click
 from flask import Flask
 
-from .app import app
+from slackertracker.app import create_app
+
+app = create_app('instance/config.py')
 
 # @app.cli.command()
 # def test():
