@@ -35,7 +35,9 @@ class User(Base):
             'id': self.id,
             'team_id': self.team_id,
             'slack_id': self.slack_id,
-            'display_name': self.display_name
+            'display_name': self.display_name,
+            'reactions_sent': self.reactions_sent,
+            'reactions_received': self.reactions_received
         })
 
 class Reaction(Base):
@@ -51,10 +53,11 @@ class Reaction(Base):
     def serialize(self):
         return({
             'id': self.id,
+            'team_id': self.team_id,
             'date_created': self.date_created,
             'name': self.name,
-            'sender_id': self.sender_id,
-            'receiver_id': self.receiver_id,
+            'sender_id': self.user_id_rs,
+            'receiver_id': self.user_id_rr,
             'message': self.message
         })
 
@@ -71,7 +74,7 @@ class Channel(Base):
             'slack_id': self.slack_id,
             'team_id': self.team_id,
             'name': self.name,
-            'is_private': self.is_private,
+            'is_private': self.is_private
         })
 
 app = Flask(__name__)
