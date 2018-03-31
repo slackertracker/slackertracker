@@ -148,7 +148,6 @@ def create_app(config_file):
                     team_id = team_id
                 )
 
-                print(sender.slack_id + sender.display_name + sender.team_id)
                 db.session.add(sender)
                 db.session.commit()
                 sender = User.query.filter_by(slack_id=sender_id).first()
