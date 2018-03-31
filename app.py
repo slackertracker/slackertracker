@@ -137,33 +137,33 @@ def create_app(config_file):
             item = event.get('item')
             team_id = data.get('team_id')
 
-            sender_id = event.get('user')
-            sender = User.query.filter_by(slack_id=sender_id).first()
+            sender_slack_id = event.get('user')
+            sender = User.query.filter_by(slack_id=sender_slack_id).first()
             if sender is None:
-                user_data = get_user_by_slack_id(sender_id)
+                user_data = get_user_by_slack_id(sender_slack_id)
 
                 sender = User(
                     display_name = user_data.get('display_name'),
-                    slack_id = sender_id,
+                    slack_id = sender_slack_id,
                     team_id = team_id
                 )
 
                 db.session.add(sender)
                 db.session.commit()
-                sender = User.query.filter_by(slack_id=sender_id).first()
+                sender = User.query.filter_by(slack_id=sender_slack_id).first()
 
-            receiver_id = event.get('item_user')
-            receiver = User.query.filter_by(slack_id=receiver_id).first()
+            receiver_slack_id = event.get('item_user')
+            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
             if receiver is None:
-                user_data = get_user_by_slack_id(receiver_id)
+                user_data = get_user_by_slack_id(receiver_slack_id)
                 receiver = User(
-                    slack_id = receiver_id,
+                    slack_id = receiver_slack_id,
                     display_name = user_data.get('display_name'),
                     team_id = team_id
                 )
                 db.session.add(receiver)
                 db.session.commit()
-                receiver = User.query.filter_by(slack_id=receiver_id).first()
+                receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
             
             if item.get('type') == 'message':
                 channel_id = item.get('channel')
