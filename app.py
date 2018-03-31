@@ -13,7 +13,6 @@ from flask import request
 from flask import Response
 
 ## MODELS
-
 db = SQLAlchemy()
 
 class Base(db.Model):
@@ -84,20 +83,25 @@ def slash_command():
 def incoming_event():
     data = request.get_json()
 
-    if data['type'] == 'url_verification':
+    if data.get('type') == 'url_verification':
         return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
 
-    elif data['type'] == 'reaction_added':
-        channel = ""
+    elif data.get('type') == 'event_callback':
+        event = data.get('event')
+        item = event.get('item')
+        channel_id = ''
+        sender_id = event.get('user')
+        receiver_id = event.get('item_user')
+        name = event.get('reaction')
 
-        if data['item']['type'] == 'message':
-            channel_id = data['item']['channel']
+        if item.get('type') == 'message':
+            channel_id = item.get('channel')
 
         reaction = {
-            'sender_id': data['user'],
-            'receiver_id': data['item_user'],
+            'name': name,
+            'sender_id': sender_id,
+            'receiver_id': receiver_id,
             'channel_id': channel_id,
-            'reaction': data['reaction']
         }
 
         return(jsonify(reaction))
