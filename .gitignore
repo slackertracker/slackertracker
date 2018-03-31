@@ -148,5 +148,6 @@ tags
 .history
 
 !instance/config.py.template
+!instance/test_config.py
 
 # End of https://www.gitignore.io/api/vim,macos,python,visualstudiocode
