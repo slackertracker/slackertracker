@@ -43,9 +43,8 @@ class User(Base):
 class Reaction(Base):
     name = db.Column(db.String(32), nullable=False)
     team_id = db.Column(db.String(32), nullable=False)
-    message = db.Column(db.Text)
     
-    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'))
 
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -58,7 +57,6 @@ class Reaction(Base):
             'name': self.name,
             'sender_id': self.sender_id,
             'receiver_id': self.receiver_id,
-            'message': self.message
         })
 
 class Channel(Base):
