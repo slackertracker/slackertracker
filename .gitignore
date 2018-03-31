@@ -1,5 +1,3 @@
-instance/
-
 # Created by https://www.gitignore.io/api/vim,macos,python,visualstudiocode
 
 ### macOS ###
@@ -83,7 +81,7 @@ coverage.xml
 *.pot
 
 # Flask stuff:
-instance/
+instance/*
 .webassets-cache
 
 # Scrapy stuff:
@@ -149,5 +147,6 @@ tags
 !.vscode/extensions.json
 .history
 
+!instance/config.py.template
 
 # End of https://www.gitignore.io/api/vim,macos,python,visualstudiocode
