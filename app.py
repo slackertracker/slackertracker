@@ -69,18 +69,15 @@ def auth_request():
 
 @app.route('/auth/granted')
 def auth_granted():
-    print(request.json)
     return("Authorized.")
 
 @app.route('/api/slack/commands', methods=['POST'])
 def slash_command():
     data = request.form.to_dict()
-    print(data)
 
     if data.get('type'):
         return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
     else:
-        print(data)
         return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
 
 @app.route('/api/slack/events', methods=['POST'])
