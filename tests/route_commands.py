@@ -52,6 +52,7 @@ def get_count(q):
 
 class TestRouteCommands(unittest.TestCase):
     def setUp(self):
+        # TODO: app.debug doesn't work in here
         app = create_app(test_config)
         app.testing = True
         self.app = app
