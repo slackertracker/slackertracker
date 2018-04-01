@@ -82,6 +82,22 @@ class TestRouteCommands(unittest.TestCase):
         query = Reaction.query.filter_by(receiver_id=receiver.id)
         self.assertEqual(get_count(query), 0)
 
+        # check that the api responds correctly for no reactions
+        data = {
+            'user_id': receiver.slack_id,
+            'text': '',
+            'team_id': team_id,
+            'token': current_app.config.get('SLACK_VERIFICATION_TOKEN'),
+            'user_name': receiver.display_name,
+        }
+
+        with current_app.test_client() as c:
+            response = c.post('/api/slack/commands', data=data)
+
+            line = bytes(receiver.display_name, 'utf-8')
+            self.assertIn(line, response.data)
+            self.assertIn(b"t have any reactions. :cry:",response.data)
+
         reaction = generate_reaction(sender, channel, receiver, team_id=team_id)
         db.session.add(reaction)
         db.session.commit()
