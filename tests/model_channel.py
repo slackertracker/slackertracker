@@ -3,6 +3,8 @@ import unittest
 from slackertracker.app import create_app, db
 from slackertracker.app import Channel
 from slackertracker.tests.suite import test_config
+from slackertracker.factories.channel import generate_channel
+from slackertracker.factories.utils import generate_id
 
 class TestChannelModel(unittest.TestCase):
     def setUp(self):
@@ -26,6 +28,17 @@ class TestChannelModel(unittest.TestCase):
         self.assertEqual(found_channel.team_id, "A12341234")
         self.assertEqual(found_channel.slack_id, "C12341234")
         self.assertEqual(found_channel.name, "channel_name")
+
+    def test_create_ten_channels(self):
+        team_id = generate_id('T')
+        channels = [generate_channel(team_id) for _ in range(0, 10)]
+        db.session.add_all(channels)
+        db.session.commit()
+
+        for channel in channels:
+            self.assertIsNotNone(channel.id)
+            found_channel = channel.query.get(channel.id)
+            self.assertEqual(channel.id, found_channel.id)
 
     def tearDown(self):
         db.session.remove()
