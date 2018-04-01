@@ -1,3 +1,4 @@
+import sys
 import click
 from flask import Flask
 
@@ -9,4 +10,6 @@ app = create_app('instance/config.py')
 def test():
     import unittest
     from slackertracker.tests.suite import suite
-    unittest.TextTestRunner().run(suite)
+    runner = unittest.TextTestRunner()
+    ret = not runner.run(suite).wasSuccessful()
+    sys.exit(ret)

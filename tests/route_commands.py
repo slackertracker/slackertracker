@@ -96,7 +96,7 @@ class TestRouteCommands(unittest.TestCase):
 
             line = bytes(receiver.display_name, 'utf-8')
             self.assertIn(line, response.data)
-            self.assertIn(b"t have any reactions. :cry:",response.data)
+            self.assertIn(b"Oh no, you haven",response.data)
 
         reaction = generate_reaction(sender, channel, receiver, team_id=team_id)
         db.session.add(reaction)
@@ -119,7 +119,7 @@ class TestRouteCommands(unittest.TestCase):
 
             line = bytes(receiver.display_name, 'utf-8')
             self.assertIn(line, response.data)
-            line = bytes(":{}: : {}".format(receiver.reactions_received[0].name, 1), 'utf-8')
+            line = bytes(":{}: (_{}_)".format(receiver.reactions_received[0].name, 1), 'utf-8')
             self.assertIn(line,response.data)
     
     def test_one_user_many_reactions(self):
@@ -161,15 +161,15 @@ class TestRouteCommands(unittest.TestCase):
             line = bytes(receiver.display_name, 'utf-8')
             self.assertIn(line, response.data)
 
-            line = bytes(":{}: : {}".format("test0", 10), 'utf-8')
+            line = bytes(":{}: (_{}_)".format("test0", 10), 'utf-8')
             self.assertIn(line,response.data)
-            line = bytes(":{}: : {}".format("test1", 9), 'utf-8')
+            line = bytes(":{}: (_{}_)".format("test1", 9), 'utf-8')
             self.assertIn(line,response.data)
-            line = bytes(":{}: : {}".format("test2", 8), 'utf-8')
+            line = bytes(":{}: (_{}_)".format("test2", 8), 'utf-8')
             self.assertIn(line,response.data)
-            line = bytes(":{}: : {}".format("test3", 7), 'utf-8')
+            line = bytes(":{}: (_{}_)".format("test3", 7), 'utf-8')
             self.assertIn(line,response.data)
-            line = bytes(":{}: : {}".format("test4", 6), 'utf-8')
+            line = bytes(":{}: (_{}_)".format("test4", 6), 'utf-8')
             self.assertIn(line,response.data)
             line = b'test5'
             self.assertNotIn(line,response.data)
