@@ -97,6 +97,8 @@ def create_app(config_file):
     def receive_data():
         if request.method == 'POST':
             data = request.get_json()
+            if app.debug:
+                print('/ POST data: ', data)
 
             if data['type'] == 'url_verification':
                 return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
@@ -119,15 +121,37 @@ def create_app(config_file):
     @app.route('/api/slack/commands', methods=['POST'])
     def slash_command():
         data = request.form.to_dict()
+        if app.debug:
+            print('/api/slack/commands POST data: ', data)
 
         if data.get('type'):
-            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
+            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
         else:
-            return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
+            # /api/slack/commands with no params - give top 5 received emojis for current user
+            if data.get('text').strip() == '':
+                slack_user_id = data.get('user_id')
+                user = User.query.filter_by(slack_id=slack_user_id).first()
+                reaction_counts = {}
+                if user:
+                    for reaction in user.reactions_received:
+                        reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
+                sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
+                text = "Top 5 Emojis Received By {}\n".format(data['user_name'])
+                for reaction in sorted_reactions[:5]:
+                    text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
+                if not sorted_reactions: 
+                    text += "You don't have any reactions. :cry:\n" 
+                return(jsonify({ "text": text }))
 
+            # default test resp
+            else:
+                return(jsonify({ "text": "Test reply: {} from {}".format(data['text'], data['user_name']) })) 
+       
     @app.route('/api/slack/events', methods=['POST'])
     def incoming_event():
         data = request.get_json()
+        if app.debug:
+            print('/api/slack/events POST data: ', data)
 
         if data.get('type') == 'url_verification':
             return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
@@ -151,19 +175,19 @@ def create_app(config_file):
                 db.session.add(sender)
                 db.session.commit()
                 sender = User.query.filter_by(slack_id=sender_slack_id).first()
-
+            
             receiver_slack_id = event.get('item_user')
-            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
-            if receiver is None:
-                user_data = get_user_by_slack_id(receiver_slack_id)
-                receiver = User(
-                    slack_id = receiver_slack_id,
-                    display_name = user_data.get('display_name'),
-                    team_id = team_id
-                )
-                db.session.add(receiver)
-                db.session.commit()
+            if receiver_slack_id:
                 receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+                if receiver is None:
+                     user_data = get_user_by_slack_id(receiver_slack_id)
+                     receiver = User(
+                         slack_id = receiver_slack_id,
+                         display_name = user_data.get('display_name'),
+                         team_id = team_id
+                     )
+                     db.session.add(receiver)
+                     db.session.commit()
             
             if item.get('type') == 'message':
                 channel_id = item.get('channel')
@@ -185,7 +209,7 @@ def create_app(config_file):
                 name = event.get('reaction'),
                 team_id = team_id,
                 sender_id = sender.id,
-                receiver_id = receiver.id,
+                receiver_id = receiver.id if receiver_slack_id else None,
                 channel_id = channel.id
             )
 
