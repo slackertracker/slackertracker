@@ -24,3 +24,4 @@ ENV LANG C.UTF-8
 RUN flask db upgrade
 
 CMD flask run --host=0.0.0.0
+
