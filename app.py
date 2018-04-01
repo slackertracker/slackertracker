@@ -193,7 +193,6 @@ def create_app(config_file):
         slash_command = data.get('command')
         
         resp_text = ("To see your karma score: {0}\n"
-            
                     "To see another user's karma score: {0} @username\n"
                     "To see a channel's top 5 most-used emojis: {0} #channel\n"
                     "To see a list of commands you can use (what you're seeing now): {0} help"
