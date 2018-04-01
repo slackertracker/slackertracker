@@ -55,3 +55,39 @@ def get_channel_by_slack_id(slack_id):
         'name': channel.get('name'),
         'is_private': channel.get('is_private')
     })
+
+def generate_message_fields(reaction_names, reaction_counts):
+    msg = {
+        "response_type": "ephemeral",
+        "attachments": [
+            {
+                "fallback": "SlackerTracker",
+                "color": "good",
+            }
+        ]
+    }
+   
+    if reaction_names: 
+        msg.get('attachments')[0]['fields'] = [
+            {
+                "title": "Reaction",
+                "value": "",
+                "short": True
+            },
+            {
+                "title": "Count",
+                "value": "",
+                "short": True
+            }
+        ]
+        for reaction in reaction_names:
+            fields = msg.get('attachments')[0].get('fields')
+            fields[0]['value'] += ":{}:\n".format(reaction) 
+            fields[1]['value'] += "{}\n".format(str(reaction_counts[reaction]))
+
+    else:
+        msg.get('attachments')[0]['color'] = 'warning'
+        msg.get('attachments')[0]['text'] = "Oh no, you haven't received _any_ reactions. :cry:\n" 
+
+    return(msg)
+
