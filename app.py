@@ -126,7 +126,7 @@ def create_app(config_file):
             return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
         else:
             # /api/slack/commands with no params - give top 5 received emojis for current user
-            if data.get('text').isspace() or data.get('text') == '':
+            if data.get('text').strip() == '':
                 slack_user_id = data.get('user_id')
                 user = User.query.filter_by(slack_id=slack_user_id).first()
                 if user:
