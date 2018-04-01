@@ -1,6 +1,8 @@
 import unittest
 import random
 
+from flask import current_app
+
 from sqlalchemy import func
 
 from slackertracker.app import create_app, db
@@ -41,8 +43,6 @@ def add_reactions_to_user(count, user, users, channels, team_id):
     db.session.commit()
     return reactions
 
-def generate_slash_command(team_id, user_id, text):
-    pass
 
 # from https://gist.github.com/hest/8798884
 def get_count(q):
@@ -54,8 +54,18 @@ class TestRouteCommands(unittest.TestCase):
     def setUp(self):
         app = create_app(test_config)
         app.testing = True
-        self.app = app.test_client()
+        self.app = app
         db.create_all()
+
+    def test_api_slack_commands_exists(self):
+        # TODO: fix route to handle missing data
+        with current_app.test_client() as c:
+            data = {
+                'text': '',
+                'user_name': 'bad_user',
+                }
+            response = c.post('/api/slack/commands', data=data)
+            self.assertEquals(response.status_code, 200)
 
     def test_one_user_one_reaction(self):
         team_id = generate_id("T")
@@ -64,8 +74,10 @@ class TestRouteCommands(unittest.TestCase):
         sender = generate_user(team_id=team_id)
         channel = generate_channel(team_id=team_id)
         db.session.add_all([receiver, sender, channel])
+
         db.session.commit()
 
+        # check that count of reactions received is 0 before
         query = Reaction.query.filter_by(receiver_id=receiver.id)
         self.assertEqual(get_count(query), 0)
 
@@ -73,8 +85,25 @@ class TestRouteCommands(unittest.TestCase):
         db.session.add(reaction)
         db.session.commit()
 
+        # check count of reactions receiverd  is 1 after
         query = Reaction.query.filter_by(receiver_id=receiver.id)
         self.assertEqual(get_count(query), 1)
+
+        data = {
+            'user_id': receiver.slack_id,
+            'text': '',
+            'team_id': team_id,
+            'token': current_app.config.get('SLACK_VERIFICATION_TOKEN'),
+            'user_name': receiver.display_name,
+        }
+
+        with current_app.test_client() as c:
+            response = c.post('/api/slack/commands', data=data)
+
+            line = bytes(receiver.display_name, 'utf-8')
+            self.assertIn(line, response.data)
+            line = bytes(":{}: : {}".format(receiver.reactions_received[0].name, 1), 'utf-8')
+            self.assertIn(line,response.data)
     
     def test_one_user_many_reactions(self):
         team_id = generate_id("T")
