@@ -119,12 +119,33 @@ def create_app(config_file):
     @app.route('/api/slack/commands', methods=['POST'])
     def slash_command():
         data = request.form.to_dict()
+        print('data: ', data)
 
         if data.get('type'):
-            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN'])) 
+            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
         else:
-            return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] }))
+            # /api/slack/commands with no params - give top 5 received emojis for current user
+            if(data.get('text') == ''):
+                slack_user_id = data.get('user_id')
+                user = User.query.filter_by(slack_id=slack_user_id).first()
+                if user:
+                    reaction_counts = {}
+                    for reaction in user.reactions_received:
+                        if reaction.name not in reaction_counts:
+                            reaction_counts[reaction.name] = 1
+                        else:
+                            reaction_counts[reaction.name] += 1
+                sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
+                text = "Top 5 Emojis Received By " + data['user_name'] + "\n"
+                for i in range(0,5):
+                    reaction = sorted_reactions[i]
+                    text += ":" + reaction + ": : " + str(reaction_counts[reaction]) + "\n"
+                return(jsonify({ "text": text }))
 
+            # default test resp
+            else:
+                return(jsonify({ "text": "Test reply: " + data['text'] + " from " + data['user_name'] })) 
+       
     @app.route('/api/slack/events', methods=['POST'])
     def incoming_event():
         data = request.get_json()
@@ -151,19 +172,20 @@ def create_app(config_file):
                 db.session.add(sender)
                 db.session.commit()
                 sender = User.query.filter_by(slack_id=sender_slack_id).first()
-
+            
             receiver_slack_id = event.get('item_user')
-            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
-            if receiver is None:
-                user_data = get_user_by_slack_id(receiver_slack_id)
-                receiver = User(
-                    slack_id = receiver_slack_id,
-                    display_name = user_data.get('display_name'),
-                    team_id = team_id
-                )
-                db.session.add(receiver)
-                db.session.commit()
+            if receiver_slack_id:
                 receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+                if receiver is None:
+                     user_data = get_user_by_slack_id(receiver_slack_id)
+                     receiver = User(
+                         slack_id = receiver_slack_id,
+                         display_name = user_data.get('display_name'),
+                         team_id = team_id
+                     )
+                     db.session.add(receiver)
+                     db.session.commit()
+                     receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
             
             if item.get('type') == 'message':
                 channel_id = item.get('channel')
@@ -185,7 +207,7 @@ def create_app(config_file):
                 name = event.get('reaction'),
                 team_id = team_id,
                 sender_id = sender.id,
-                receiver_id = receiver.id,
+                receiver_id = receiver.id if receiver_slack_id else None,
                 channel_id = channel.id
             )
 
