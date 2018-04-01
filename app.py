@@ -151,34 +151,63 @@ def create_app(config_file):
 
         if data.get('type'):
             return(get_challenge_response(data))
-        else:
-            # /api/slack/commands with no params - give top 5 received emojis for current user
-            user_name = data.get('user_name')
-            slack_user_id = data.get('user_id')
-            req_text = data.get('text')
-            if req_text.strip() == '':
-                if app.debug:
-                    print('{} requested top 5 emojis received by self'.format(user_name))
-                
-                user = User.query.filter_by(slack_id=slack_user_id).first()
-                reaction_counts = {}
-                if user:
-                    for reaction in user.reactions_received:
-                        reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
 
-                sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
-                resp_text = "Top 5 Emojis Received By {}\n".format(user_name)
-                for reaction in sorted_reactions[:5]:
-                    resp_text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
-                if not sorted_reactions:
-                    resp_text += "You don't have any reactions. :cry:\n" 
-                return(jsonify({ "text": resp_text }))
+        user_name = data.get('user_name')
+        slack_user_id = data.get('user_id')
+        req_text = data.get('text')
+        msg = {
+            "response_type": "ephemeral",
+            "attachments": [
+                {
+                    "fallback": "SlackerTracker",
+                    "color": "good"
+                }
+            ]
+        }
 
-            # default test resp
-            else:
-                if app.debug:
-                    print('{} requested test reply'.format(user_name))
-                return(jsonify({ "text": "Test reply: {} from {}".format(req_text, user_name) })) 
+        # /api/slack/commands with no params - give top 5 received emojis for current user
+        if req_text.strip() == '':
+            if app.debug:
+                print('{} requested top 5 emojis received by self'.format(user_name))
+            
+            user = User.query.filter_by(slack_id=slack_user_id).first()
+            reaction_counts = {}
+            if user:
+                for reaction in user.reactions_received:
+                    reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
+
+            resp_pretext = "*Top 5 emoji reactions received by {}* (_ahem, you!_)".format(user_name)
+
+            sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
+            resp_text = 'Count is displayed in parens. :nerd_face:\n\n'
+            for reaction in sorted_reactions[:5]:
+                resp_text += ":{}: (_{}_)\n".format(reaction, str(reaction_counts[reaction]))
+            if not sorted_reactions:
+                resp_text = "Oh no, you haven't received _any_ reactions. :cry:\n" 
+                msg.get('attachments')[0]['color'] = 'warning'
+
+            msg.get('attachments')[0]['pretext'] = resp_pretext
+            msg.get('attachments')[0]['text'] = resp_text
+
+            return(jsonify(msg))
+
+        # default help resp with usage (commands)
+        if app.debug:
+           print('{} requested usage / ran unrecognized command'.format(user_name))
+            
+        slash_command = '/karma';
+        resp_text = ("To see your karma score: {}\n"
+                    "To see another user's karma score: {} @username\n"
+                    "To see your channel's top 5 most-used emojis: {} #channel\n"
+                    "To see a list of commands you can use (what you're seeing now): {} help"
+                    ).format(slash_command, slash_command, slash_command, slash_command)
+        resp_pretext = ("*SlackerTracker tracks your karma!*\n"
+                        "_By tracking emoji reactions you give and receive, we tally up points to see who's :imp: or :innocent:_")
+
+        msg.get('attachments')[0]['text'] = resp_text
+        msg.get('attachments')[0]['pretext'] = resp_pretext
+
+        return(jsonify(msg)) 
        
     @app.route('/api/slack/events', methods=['POST'])
     def incoming_event():
