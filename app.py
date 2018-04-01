@@ -195,7 +195,8 @@ def create_app(config_file):
         if app.debug:
            print('{} requested usage / ran unrecognized command'.format(user_name))
             
-        slash_command = '/karma';
+        slash_command = data.get('command')
+        
         resp_text = ("To see your karma score: {0}\n"
                     "To see another user's karma score: {0} @username\n"
                     "To see a channel's top 5 most-used emojis: {0} #channel\n"
