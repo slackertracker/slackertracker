@@ -130,6 +130,33 @@ class TestRouteCommands(unittest.TestCase):
         query = Reaction.query.filter_by(receiver_id=receiver.id)
         self.assertEqual(get_count(query), 45)
 
+        data = {
+            'user_id': receiver.slack_id,
+            'text': '',
+            'team_id': team_id,
+            'token': current_app.config.get('SLACK_VERIFICATION_TOKEN'),
+            'user_name': receiver.display_name,
+        }
+
+        with current_app.test_client() as c:
+            response = c.post('/api/slack/commands', data=data)
+
+            line = bytes(receiver.display_name, 'utf-8')
+            self.assertIn(line, response.data)
+
+            line = bytes(":{}: : {}".format("test0", 10), 'utf-8')
+            self.assertIn(line,response.data)
+            line = bytes(":{}: : {}".format("test1", 9), 'utf-8')
+            self.assertIn(line,response.data)
+            line = bytes(":{}: : {}".format("test2", 8), 'utf-8')
+            self.assertIn(line,response.data)
+            line = bytes(":{}: : {}".format("test3", 7), 'utf-8')
+            self.assertIn(line,response.data)
+            line = bytes(":{}: : {}".format("test4", 6), 'utf-8')
+            self.assertIn(line,response.data)
+            line = b'test5'
+            self.assertNotIn(line,response.data)
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
