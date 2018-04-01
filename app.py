@@ -252,7 +252,6 @@ def create_app(config_file):
 
                 if not channel:
                     channel_data = get_channel_by_slack_id(channel_id)
-                    print(channel_data)
                     channel = Channel(
                         slack_id = channel_id,
                         team_id = team_id,
