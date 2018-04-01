@@ -129,14 +129,16 @@ def create_app(config_file):
             if data.get('text').strip() == '':
                 slack_user_id = data.get('user_id')
                 user = User.query.filter_by(slack_id=slack_user_id).first()
+                reaction_counts = {}
                 if user:
-                    reaction_counts = {}
                     for reaction in user.reactions_received:
                         reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
                 sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
                 text = "Top 5 Emojis Received By {}\n".format(data['user_name'])
                 for reaction in sorted_reactions[:5]:
                     text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
+                if not sorted_reactions: 
+                    text += "You don't have any reactions. :cry:\n" 
                 return(jsonify({ "text": text }))
 
             # default test resp
