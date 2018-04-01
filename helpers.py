@@ -1,19 +1,27 @@
-from flask import jsonify, Response
 import requests
 
-def get_challenge_response(data, valid_token):
-    if data['token'] == valid_token:
+from flask import jsonify, Response, current_app
+
+def get_challenge_response(data):
+    if data['token'] == current_app.config.get('SLACK_VERIFICATION_TOKEN'):
+        if current_app.debug:
+            print("Responding to valid challenge.")
         return jsonify({ "challenge": data["challenge"] })
     else:
-        return("Invalid token.")
+        response = "Invalid challenge token."
+        if current_app.debug:
+            print(response)
+        return(response)
 
 def get_user_by_slack_id(slack_id):
-    from slackertracker.instance.config import SLACK_LEGACY_TOKEN
+    """
+    queries the slack web API for information about the user.
+    """
 
     url = "https://slack.com/api/users.info?user="
 
     headers = { 
-        "Authorization": "Bearer " + SLACK_LEGACY_TOKEN,
+        "Authorization": "Bearer " + current_app.config.get('SLACK_LEGACY_TOKEN'),
     }
 
     user = requests.get(url + slack_id, headers=headers).json().get('user')

@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flask import jsonify
 from flask import render_template
+from flask import current_app
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -44,6 +45,14 @@ class User(Base):
             'reactions_received': self.reactions_received
         })
 
+@db.event.listens_for(User, "after_insert")
+def user_created_debug(mapper, connection, user):
+    """
+    Prints debug info when a user is created.
+    """
+    if current_app.debug == True:
+        print("New user: " + str(user.serialize()))
+
 class Reaction(Base):
     name = db.Column(db.String(32), nullable=False)
     team_id = db.Column(db.String(32), nullable=False)
@@ -64,6 +73,14 @@ class Reaction(Base):
             'channel_id': self.channel_id
         })
 
+@db.event.listens_for(Reaction, "after_insert")
+def reaction_created_debug(mapper, connection, reaction):
+    """
+    Prints debug info when a reaction is created.
+    """
+    if current_app.debug == True:
+        print("New reaction: " + str(reaction.serialize()))
+
 class Channel(Base):
     slack_id = db.Column(db.String(32), nullable=False)
     team_id = db.Column(db.String(32), nullable=False)
@@ -80,6 +97,14 @@ class Channel(Base):
             'is_private': self.is_private,
             'reactions': self.reactions,
         })
+
+@db.event.listens_for(Channel, "after_insert")
+def channel_created_debug(mapper, connection, channel):
+    """
+    Prints debug info when a channel is created.
+    """
+    if current_app.debug == True:
+        print("New channel: " + str(channel.serialize()))
 
 def create_app(config_file):
     app = Flask(__name__)
@@ -120,12 +145,12 @@ def create_app(config_file):
 
     @app.route('/api/slack/commands', methods=['POST'])
     def slash_command():
-        data = request.form.to_dict()
+        data = request.form.to_dict() or request.get_json()
         if app.debug:
             print('/api/slack/commands POST data: ', data)
 
         if data.get('type'):
-            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
+            return(get_challenge_response(data))
         else:
             # /api/slack/commands with no params - give top 5 received emojis for current user
             if data.get('text').strip() == '':
@@ -135,11 +160,12 @@ def create_app(config_file):
                 if user:
                     for reaction in user.reactions_received:
                         reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
+
                 sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
                 text = "Top 5 Emojis Received By {}\n".format(data['user_name'])
                 for reaction in sorted_reactions[:5]:
                     text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
-                if not sorted_reactions: 
+                if not sorted_reactions:
                     text += "You don't have any reactions. :cry:\n" 
                 return(jsonify({ "text": text }))
 
@@ -154,7 +180,7 @@ def create_app(config_file):
             print('/api/slack/events POST data: ', data)
 
         if data.get('type') == 'url_verification':
-            return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
+            return(get_challenge_response(data))
 
         elif data.get('type') == 'event_callback':
             event = data.get('event')
