@@ -1,27 +1,12 @@
 import unittest
 
 from slackertracker.app import create_app, db
-from slackertracker.app import User, Channel, Reaction
+from slackertracker.app import User
 from slackertracker.tests.suite import test_config
+from slackertracker.factories.user import generate_user
+from slackertracker.factories.utils import generate_id
 
-class TestHello(unittest.TestCase):
-    def setUp(self):
-        app = create_app(test_config)
-        app.testing = True
-        self.app = app.test_client()
-        with app.app_context():
-            db.create_all()
-
-
-    def test_hello(self):
-        response = self.app.get('/')
-        assert b'Hello!' in response.data
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()
-
-class TestCreateUser(unittest.TestCase):
+class TestUserModel(unittest.TestCase):
     def setUp(self):
         app = create_app(test_config)
         app.testing = True
@@ -29,7 +14,7 @@ class TestCreateUser(unittest.TestCase):
         db.create_all()
 
 
-    def test_valid(self):
+    def test_create_valid_user(self):
         new_user = User()
         new_user.team_id = "A12341234"
         new_user.slack_id = "U12341234"
@@ -43,6 +28,17 @@ class TestCreateUser(unittest.TestCase):
         self.assertEqual(found_user.team_id, "A12341234")
         self.assertEqual(found_user.slack_id, "U12341234")
         self.assertEqual(found_user.display_name, "nathan")
+
+    def test_create_ten_users(self):
+        team_id = generate_id('T')
+        users = [generate_user(team_id) for _ in range(0, 10)]
+        db.session.add_all(users)
+        db.session.commit()
+
+        for user in users:
+            self.assertIsNotNone(user.id)
+            found_user = User.query.get(user.id)
+            self.assertEqual(user.id, found_user.id)
 
     def tearDown(self):
         db.session.remove()
