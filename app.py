@@ -97,6 +97,8 @@ def create_app(config_file):
     def receive_data():
         if request.method == 'POST':
             data = request.get_json()
+            if app.debug:
+                print('/ POST data: ', data)
 
             if data['type'] == 'url_verification':
                 return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
@@ -120,7 +122,7 @@ def create_app(config_file):
     def slash_command():
         data = request.form.to_dict()
         if app.debug:
-            print('slash command data: ', data)
+            print('/api/slack/commands POST data: ', data)
 
         if data.get('type'):
             return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
@@ -148,6 +150,8 @@ def create_app(config_file):
     @app.route('/api/slack/events', methods=['POST'])
     def incoming_event():
         data = request.get_json()
+        if app.debug:
+            print('/api/slack/events POST data: ', data)
 
         if data.get('type') == 'url_verification':
             return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
