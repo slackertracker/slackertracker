@@ -196,11 +196,11 @@ def create_app(config_file):
            print('{} requested usage / ran unrecognized command'.format(user_name))
             
         slash_command = '/karma';
-        resp_text = ("To see your karma score: {}\n"
-                    "To see another user's karma score: {} @username\n"
-                    "To see your channel's top 5 most-used emojis: {} #channel\n"
-                    "To see a list of commands you can use (what you're seeing now): {} help"
-                    ).format(slash_command, slash_command, slash_command, slash_command)
+        resp_text = ("To see your karma score: {0}\n"
+                    "To see another user's karma score: {0} @username\n"
+                    "To see a channel's top 5 most-used emojis: {0} #channel\n"
+                    "To see a list of commands you can use (what you're seeing now): {0} help"
+                    ).format(slash_command)
         resp_pretext = ("*SlackerTracker tracks your karma!*\n"
                         "_By tracking emoji reactions you give and receive, we tally up points to see who's :imp: or :innocent:_")
 
