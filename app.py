@@ -218,13 +218,21 @@ def create_app(config_file):
         if data.get('type') == 'url_verification':
             return(get_challenge_response(data))
 
-        elif data.get('type') == 'event_callback':
-            event = data.get('event')
-            item = event.get('item')
-            team_id = data.get('team_id')
+        event = data.get('event')
+        event_type = event.get('type')
+        item = event.get('item')
+        team_id = data.get('team_id')
 
-            sender_slack_id = event.get('user')
-            sender = User.query.filter_by(slack_id=sender_slack_id).first()
+        sender_slack_id = event.get('user')
+        sender = User.query.filter_by(slack_id=sender_slack_id).first()
+        receiver_slack_id = event.get('item_user')
+
+        if event_type == 'reaction_removed':
+            print('sender_slack_id:', sender_slack_id)
+            print('receiver_slack_id:', receiver_slack_id)
+            return(jsonify({}))
+
+        if event_type == 'reaction_added':
             if sender is None:
                 user_data = get_user_by_slack_id(sender_slack_id)
 
@@ -238,7 +246,6 @@ def create_app(config_file):
                 db.session.commit()
                 sender = User.query.filter_by(slack_id=sender_slack_id).first()
             
-            receiver_slack_id = event.get('item_user')
             if receiver_slack_id:
                 receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
                 if receiver is None:
