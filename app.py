@@ -153,8 +153,13 @@ def create_app(config_file):
             return(get_challenge_response(data))
         else:
             # /api/slack/commands with no params - give top 5 received emojis for current user
-            if data.get('text').strip() == '':
-                slack_user_id = data.get('user_id')
+            user_name = data.get('user_name')
+            slack_user_id = data.get('user_id')
+            req_text = data.get('text')
+            if req_text.strip() == '':
+                if app.debug:
+                    print('{} requested top 5 emojis received by self'.format(user_name))
+                
                 user = User.query.filter_by(slack_id=slack_user_id).first()
                 reaction_counts = {}
                 if user:
@@ -162,16 +167,18 @@ def create_app(config_file):
                         reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
 
                 sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
-                text = "Top 5 Emojis Received By {}\n".format(data['user_name'])
+                resp_text = "Top 5 Emojis Received By {}\n".format(user_name)
                 for reaction in sorted_reactions[:5]:
-                    text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
+                    resp_text += ":{}: : {}\n".format(reaction, str(reaction_counts[reaction]))
                 if not sorted_reactions:
-                    text += "You don't have any reactions. :cry:\n" 
-                return(jsonify({ "text": text }))
+                    resp_text += "You don't have any reactions. :cry:\n" 
+                return(jsonify({ "text": resp_text }))
 
             # default test resp
             else:
-                return(jsonify({ "text": "Test reply: {} from {}".format(data['text'], data['user_name']) })) 
+                if app.debug:
+                    print('{} requested test reply'.format(user_name))
+                return(jsonify({ "text": "Test reply: {} from {}".format(req_text, user_name) })) 
        
     @app.route('/api/slack/events', methods=['POST'])
     def incoming_event():
