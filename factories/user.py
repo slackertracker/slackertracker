@@ -15,6 +15,3 @@ def generate_user(team_id=None):
         team_id = team_id,
         display_name = display_name,
     )
-
-if __name__=='__main__':
-    print(generate_user())
