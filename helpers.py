@@ -44,8 +44,8 @@ def get_user_by_slack_id(slack_id):
 
 def get_channel_by_slack_id(slack_id):
     from slackertracker.instance.config import SLACK_LEGACY_TOKEN
-
-    url = "https://slack.com/api/channels.info?channel="
+    
+    url = "https://slack.com/api/conversations.info?channel="
 
     headers = { 
         "Authorization": "Bearer " + SLACK_LEGACY_TOKEN,
@@ -67,6 +67,6 @@ def get_channel_by_slack_id(slack_id):
     return({
         'slack_id': slack_id,
         'name': channel.get('name'),
-        'is_private': channel.get('is_private')
+        'is_private': channel.get('is_private') or channel.get('is_im')
     })
 
