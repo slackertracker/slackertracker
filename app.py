@@ -234,6 +234,9 @@ def create_app(config_file):
             return(jsonify({}))
 
         if event_type == 'reaction_added':
+            if sender_slack_id and receiver_slack_id and sender_slack_id == receiver_slack_id:
+                return(jsonify({}))
+
             if sender is None:
                 user_data = get_user_by_slack_id(sender_slack_id)
 
