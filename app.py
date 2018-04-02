@@ -109,6 +109,8 @@ def channel_created_debug(mapper, connection, channel):
 def create_app(config_file):
     app = Flask(__name__)
     app.config.from_pyfile(config_file)
+    if app.debug:
+        print("Starting in debug mode.")
 
     with app.app_context():
         db.init_app(app)
@@ -121,7 +123,7 @@ def create_app(config_file):
     @app.route('/', methods=['GET', 'POST'])
     def receive_data():
         if request.method == 'POST':
-            data = request.get_json()
+            data = request.form.to_dict() or request.get_json()
             if app.debug:
                 print('/ POST data: ', data)
 
@@ -134,14 +136,6 @@ def create_app(config_file):
 
         elif request.method == 'GET':
             return("Hello!")
-
-    @app.route('/auth/request')
-    def auth_request():
-        return render_template('add_to_slack.html')
-
-    @app.route('/auth/granted')
-    def auth_granted():
-        return("Authorized.")
 
     @app.route('/api/slack/commands', methods=['POST'])
     def slash_command():
