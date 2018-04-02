@@ -220,15 +220,24 @@ def create_app(config_file):
         channel_slack_id = item.get('channel')
 
         if event_type == 'reaction_removed':
-            channel = Channel.query.filter_by(slack_id=channel_slack_id).first()
-            sender = User.query.filter_by(slack_id=sender_slack_id).first()
-            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+            if sender:
+                filters = {'sender_id': sender.id}
+
+                if channel_slack_id:
+                    channel = Channel.query.filter_by(slack_id=channel_slack_id).first()
+                    if channel:
+                        filters['channel_id'] = channel.id
+    
+                if receiver_slack_id:
+                    receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+                    if receiver:
+                        filters['receiver_id'] = receiver.id 
             
-            reaction = Reaction.query.filter_by(sender_id=sender.id, receiver_id=receiver.id, channel_id=channel.id).order_by(Reaction.date_created.desc()).first()
+                reaction = Reaction.query.filter_by(**filters).order_by(Reaction.date_created.desc()).first()
             
-            if reaction:
-                db.session.delete(reaction)
-                db.session.commit()
+                if reaction:
+                    db.session.delete(reaction)
+                    db.session.commit()
 
             return(jsonify({}))
 
