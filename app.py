@@ -223,7 +223,7 @@ def create_app(config_file):
             return(jsonify({}))
 
         if event_type == 'reaction_added':
-            if sender_slack_id and receiver_slack_id and sender_slack_id == receiver_slack_id and not app.debug:
+            if sender_slack_id and receiver_slack_id and sender_slack_id == receiver_slack_id and not app.config.get('IGNORE_SAME_REACTION'):
                 return(jsonify({}))
 
             if sender is None:

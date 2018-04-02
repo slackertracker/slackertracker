@@ -10,3 +10,5 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Flask Config
 DEBUG = False
+# SlackerTracker Config
+IGNORE_SAME_REACTION = False
