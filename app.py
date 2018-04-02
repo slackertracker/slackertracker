@@ -11,6 +11,7 @@ from flask_migrate import Migrate
 from slackertracker.helpers import get_challenge_response
 from slackertracker.helpers import get_user_by_slack_id
 from slackertracker.helpers import get_channel_by_slack_id
+from slackertracker.helpers import generate_message_fields
 
 # Stuff for routing
 from flask import request
@@ -170,18 +171,12 @@ def create_app(config_file):
                 for reaction in user.reactions_received:
                     reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
 
-            resp_pretext = "*Top 5 emoji reactions received by {}* (_ahem, you!_)".format(user_name)
-
             sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
-            resp_text = 'Count is displayed in parens. :nerd_face:\n\n'
-            for reaction in sorted_reactions[:5]:
-                resp_text += ":{}: (_{}_)\n".format(reaction, str(reaction_counts[reaction]))
-            if not sorted_reactions:
-                resp_text = "Oh no, you haven't received _any_ reactions. :cry:\n" 
-                msg.get('attachments')[0]['color'] = 'warning'
 
+            resp_pretext = "*Top 5 emoji reactions received by <@{}>* (_ahem, you!_)".format(slack_user_id)
+
+            msg = generate_message_fields(sorted_reactions[:5], reaction_counts)
             msg.get('attachments')[0]['pretext'] = resp_pretext
-            msg.get('attachments')[0]['text'] = resp_text
 
             return(jsonify(msg))
 
@@ -213,13 +208,24 @@ def create_app(config_file):
         if data.get('type') == 'url_verification':
             return(get_challenge_response(data))
 
-        elif data.get('type') == 'event_callback':
-            event = data.get('event')
-            item = event.get('item')
-            team_id = data.get('team_id')
+        event = data.get('event')
+        event_type = event.get('type')
+        item = event.get('item')
+        team_id = data.get('team_id')
 
-            sender_slack_id = event.get('user')
-            sender = User.query.filter_by(slack_id=sender_slack_id).first()
+        sender_slack_id = event.get('user')
+        sender = User.query.filter_by(slack_id=sender_slack_id).first()
+        receiver_slack_id = event.get('item_user')
+
+        if event_type == 'reaction_removed':
+            print('sender_slack_id:', sender_slack_id)
+            print('receiver_slack_id:', receiver_slack_id)
+            return(jsonify({}))
+
+        if event_type == 'reaction_added':
+            if not app.config.get('IGNORE_SAME_REACTION') and sender_slack_id and receiver_slack_id and sender_slack_id == receiver_slack_id:
+                return(jsonify({}))
+
             if sender is None:
                 user_data = get_user_by_slack_id(sender_slack_id)
 
@@ -233,7 +239,6 @@ def create_app(config_file):
                 db.session.commit()
                 sender = User.query.filter_by(slack_id=sender_slack_id).first()
             
-            receiver_slack_id = event.get('item_user')
             if receiver_slack_id:
                 receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
                 if receiver is None:
