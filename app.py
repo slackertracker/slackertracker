@@ -5,6 +5,7 @@ from flask import render_template
 from flask import current_app
 
 from flask_sqlalchemy import SQLAlchemy
+
 from flask_migrate import Migrate
 
 # helpers
@@ -216,10 +217,18 @@ def create_app(config_file):
         sender_slack_id = event.get('user')
         sender = User.query.filter_by(slack_id=sender_slack_id).first()
         receiver_slack_id = event.get('item_user')
+        channel_slack_id = item.get('channel')
 
         if event_type == 'reaction_removed':
-            print('sender_slack_id:', sender_slack_id)
-            print('receiver_slack_id:', receiver_slack_id)
+            channel = Channel.query.filter_by(slack_id=channel_slack_id).first()
+            sender = User.query.filter_by(slack_id=sender_slack_id).first()
+            receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
+            
+            reaction = Reaction.query.filter_by(sender_id=sender.id, receiver_id=receiver.id, channel_id=channel.id).order_by(Reaction.date_created.desc()).first()
+            if reaction:
+                db.session.delete(reaction)
+                db.session.commit()
+
             return(jsonify({}))
 
         if event_type == 'reaction_added':
