@@ -96,7 +96,7 @@ class TestRouteCommands(unittest.TestCase):
 
             line = bytes(receiver.slack_id, 'utf-8')
             self.assertIn(line, response.data)
-            self.assertIn(b"Oh no, you haven",response.data)
+            self.assertIn(b"Oh no, they haven",response.data)
 
         reaction = generate_reaction(sender, channel, receiver, team_id=team_id)
         db.session.add(reaction)
@@ -175,3 +175,4 @@ class TestRouteCommands(unittest.TestCase):
     def tearDown(self):
         db.session.remove()
         db.drop_all()
+

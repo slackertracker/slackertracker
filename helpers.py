@@ -101,7 +101,7 @@ def generate_message_fields(reaction_names, reaction_counts):
 
     else:
         msg.get('attachments')[0]['color'] = 'warning'
-        msg.get('attachments')[0]['text'] = "Oh no, you haven't received _any_ reactions. :cry:\n" 
+        msg.get('attachments')[0]['text'] = "Oh no, they haven't received _any_ reactions. :cry:\n" 
 
     return(msg)
 
