@@ -148,8 +148,8 @@ def create_app(config_file):
             return(get_challenge_response(data))
 
         user_name = data.get('user_name')
-        slack_user_id = data.get('user_id')
-        req_text = data.get('text')
+        requester_slack_id = data.get('user_id')
+        req_text = data.get('text').strip().strip('<>')
         msg = {
             "response_type": "ephemeral",
             "attachments": [
@@ -161,11 +161,18 @@ def create_app(config_file):
         }
 
         # /api/slack/commands with no params - give top 5 received emojis for current user
-        if req_text.strip() == '':
-            if app.debug:
-                print('{} requested top 5 emojis received by self'.format(user_name))
+        if req_text == '' or req_text[0] == '@':
             
+            if req_text[0] == '@':
+                slack_user_id = req_text.split('|')[0][1:]
+            else:
+                slack_user_id = requester_slack_id
+
             user = User.query.filter_by(slack_id=slack_user_id).first()
+
+            if app.debug:
+                print('{0} requested top 5 emojis received by {1}'.format(user_name, slack_user_id)
+            
             reaction_counts = {}
             if user:
                 for reaction in user.reactions_received:
@@ -173,7 +180,11 @@ def create_app(config_file):
 
             sorted_reactions = sorted(reaction_counts, key=reaction_counts.get, reverse=True)
 
-            resp_pretext = "*Top 5 emoji reactions received by <@{}>* (_ahem, you!_)".format(slack_user_id)
+            flavor_for_self_req = ""
+            if slack_user_id == requester_slack_id:
+                flavor_for_self_req = "(_ahem, you!_)"
+
+            resp_pretext = "*Top 5 emoji reactions received by <@{}>*{}".format(slack_user_id, flavor_for_self_req)
 
             msg = generate_message_fields(sorted_reactions[:5], reaction_counts)
             msg.get('attachments')[0]['pretext'] = resp_pretext
