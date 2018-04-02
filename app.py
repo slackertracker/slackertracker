@@ -225,7 +225,7 @@ def create_app(config_file):
             receiver = User.query.filter_by(slack_id=receiver_slack_id).first()
             
             reaction = Reaction.query.filter_by(sender_id=sender.id, receiver_id=receiver.id, channel_id=channel.id).order_by(Reaction.date_created.desc()).first()
-            print(reaction)
+            
             if reaction:
                 db.session.delete(reaction)
                 db.session.commit()
