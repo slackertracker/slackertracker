@@ -130,7 +130,7 @@ def create_app(config_file):
                 print('/ POST data: ', data)
 
             if data['type'] == 'url_verification':
-                return(get_challenge_response(data, app.config['SLACK_VERIFICATION_TOKEN']))
+                return(get_challenge_response(data))
 
             else:
                 # Do some other stuff with the data received from the Event API
@@ -186,7 +186,7 @@ def create_app(config_file):
             if slack_user_id == requester_slack_id:
                 flavor_for_self_req = "(_ahem, you!_)"
 
-            resp_pretext = "*Top 5 emoji reactions received by <@{}>*{}".format(slack_user_id, flavor_for_self_req)
+            resp_pretext = "*Top 5 emoji reactions received by <@{}>* {}".format(slack_user_id, flavor_for_self_req)
 
             msg = generate_message_fields(sorted_reactions[:5], reaction_counts)
             msg.get('attachments')[0]['pretext'] = resp_pretext
@@ -201,7 +201,7 @@ def create_app(config_file):
         
         resp_text = ("To see your karma score: {0}\n"
                     "To see another user's karma score: {0} @username\n"
-                    "To see a channel's top 5 most-used emojis: {0} #channel\n"
+                    # "To see a channel's top 5 most-used emojis: {0} #channel\n"
                     "To see a list of commands you can use (what you're seeing now): {0} help"
                     ).format(slash_command)
         resp_pretext = ("*SlackerTracker tracks your karma!*\n"
