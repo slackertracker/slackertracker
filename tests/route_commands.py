@@ -94,7 +94,7 @@ class TestRouteCommands(unittest.TestCase):
         with current_app.test_client() as c:
             response = c.post('/api/slack/commands', data=data)
 
-            line = bytes(receiver.display_name, 'utf-8')
+            line = bytes(receiver.slack_id, 'utf-8')
             self.assertIn(line, response.data)
             self.assertIn(b"Oh no, you haven",response.data)
 
@@ -117,9 +117,11 @@ class TestRouteCommands(unittest.TestCase):
         with current_app.test_client() as c:
             response = c.post('/api/slack/commands', data=data)
 
-            line = bytes(receiver.display_name, 'utf-8')
+            line = bytes(receiver.slack_id, 'utf-8')
             self.assertIn(line, response.data)
-            line = bytes(":{}: (_{}_)".format(receiver.reactions_received[0].name, 1), 'utf-8')
+            line = bytes(receiver.reactions_received[0].name, 'utf-8')
+            self.assertIn(line,response.data)
+            line = bytes('1', 'utf-8')
             self.assertIn(line,response.data)
     
     def test_one_user_many_reactions(self):
@@ -158,19 +160,15 @@ class TestRouteCommands(unittest.TestCase):
         with current_app.test_client() as c:
             response = c.post('/api/slack/commands', data=data)
 
-            line = bytes(receiver.display_name, 'utf-8')
+            line = bytes("@" + receiver.slack_id, 'utf-8')
             self.assertIn(line, response.data)
 
-            line = bytes(":{}: (_{}_)".format("test0", 10), 'utf-8')
-            self.assertIn(line,response.data)
-            line = bytes(":{}: (_{}_)".format("test1", 9), 'utf-8')
-            self.assertIn(line,response.data)
-            line = bytes(":{}: (_{}_)".format("test2", 8), 'utf-8')
-            self.assertIn(line,response.data)
-            line = bytes(":{}: (_{}_)".format("test3", 7), 'utf-8')
-            self.assertIn(line,response.data)
-            line = bytes(":{}: (_{}_)".format("test4", 6), 'utf-8')
-            self.assertIn(line,response.data)
+            for i in range(0,4):
+                line = bytes("test" + str(i), 'utf-8')
+                self.assertIn(line,response.data)
+                line = bytes(str(10 - i), 'utf-8')
+                self.assertIn(line,response.data)
+
             line = b'test5'
             self.assertNotIn(line,response.data)
 
