@@ -163,17 +163,18 @@ def create_app(config_file):
         # /api/slack/commands with no params - give top 5 received emojis for current user
         if req_text == '' or req_text[0] == '@':
             
-            if req_text[0] == '@':
-                slack_user_id = req_text.split('|')[0][1:]
-            else:
+            if req_text == '':
                 slack_user_id = requester_slack_id
+            else:
+                slack_user_id = req_text.split('|')[0][1:]
 
             user = User.query.filter_by(slack_id=slack_user_id).first()
 
             if app.debug:
-                print('{0} requested top 5 emojis received by {1}'.format(user_name, slack_user_id)
+                print('{0} requested top 5 emojis received by {1}'.format(user_name, slack_user_id))
             
             reaction_counts = {}
+
             if user:
                 for reaction in user.reactions_received:
                     reaction_counts[reaction.name] = reaction_counts.get(reaction.name, 0) + 1
