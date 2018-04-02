@@ -11,16 +11,16 @@ RUN apt-get update
 RUN apt-get install -y python3 python3-pip
 RUN pip3 install --upgrade pip
 
-run mkdir -p /slackertracker/instance
-add ./requirements.txt /slackertracker
+VOLUME /slackertracker/instance
+RUN mkdir -p /slackertracker/instance
+COPY ./requirements.txt /slackertracker
 WORKDIR /slackertracker
-RUN pip3 install -r requirements.txt
-ADD . /slackertracker
+RUN pip3 install -r /slackertracker/requirements.txt
+COPY . /slackertracker
 
 ENV FLASK_APP manage.py
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
-    
-RUN flask db upgrade
 
-CMD flask run --host=0.0.0.0
+CMD flask db upgrade && flask run --host=0.0.0.0
+
