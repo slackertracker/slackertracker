@@ -2,9 +2,8 @@ version: '2'
 services:
   slackertracker:
     build: .
-    container_name: slackertracker
     volumes:
-      - slackertracker:/slackertracker/instance
+       - ./instance:/slackertracker/instance
     ports: 
       - 5000:5000
     restart:

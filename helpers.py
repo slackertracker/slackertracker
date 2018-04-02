@@ -24,7 +24,13 @@ def get_user_by_slack_id(slack_id):
         "Authorization": "Bearer " + current_app.config.get('SLACK_LEGACY_TOKEN'),
     }
 
-    user = requests.get(url + slack_id, headers=headers).json().get('user')
+    response = requests.get(url + slack_id, headers=headers).json()
+
+    if current_app.debug:
+        print("get_user API data: " + str(response))
+
+    user = response.get('user')
+
     if user is None:
         return({})
         
@@ -38,22 +44,30 @@ def get_user_by_slack_id(slack_id):
 
 def get_channel_by_slack_id(slack_id):
     from slackertracker.instance.config import SLACK_LEGACY_TOKEN
-
-    url = "https://slack.com/api/channels.info?channel="
+    
+    url = "https://slack.com/api/conversations.info?channel="
 
     headers = { 
         "Authorization": "Bearer " + SLACK_LEGACY_TOKEN,
     }
 
-    channel = requests.get(url + slack_id, headers=headers).json().get('channel')
+    response = requests.get(url + slack_id, headers=headers).json()
 
+    if current_app.debug:
+        print("get_channel API data: " + str(response))
+
+    # handle private messages, which won't return a response
+    if response.get('error'):
+       return({'slack_id': slack_id, 'is_private': True})
+	
+    channel = response.get('channel')
     if not channel:
         return({})
 
     return({
         'slack_id': slack_id,
         'name': channel.get('name'),
-        'is_private': channel.get('is_private')
+        'is_private': channel.get('is_private') or channel.get('is_im')
     })
 
 def generate_message_fields(reaction_names, reaction_counts):
